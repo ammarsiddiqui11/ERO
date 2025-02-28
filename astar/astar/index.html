@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pathfinding on Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        #map { height: 600px; width: 100%; }
+    </style>
+</head>
+<body>
+    <h1>Shortest Path on Map</h1>
+    <div id="map"></div>
+    <script>
+        // Initialize the map and set view to an appropriate location
+        const map = L.map('map').setView([19.076, 72.877], 13); // Center on Mumbai, India
+
+        // Add OpenStreetMap tiles to the map
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // Initialize variables to store the start and end points
+        let start = null;
+        let goal = null;
+        let startMarker = null;
+        let goalMarker = null;
+
+        // Function to update the map with the start and end points
+        function updateMarkers() {
+            // Remove old markers if they exist
+            if (startMarker) startMarker.remove();
+            if (goalMarker) goalMarker.remove();
+
+            // Add new markers
+            if (start) {
+                startMarker = L.marker(start).addTo(map).bindPopup('Start').openPopup();
+            }
+            if (goal) {
+                goalMarker = L.marker(goal).addTo(map).bindPopup('Goal').openPopup();
+            }
+
+            // If both markers are set, find the path
+            if (start && goal) {
+                fetchPath();
+            }
+        }
+
+        // Event listener for clicking on the map to set start and goal
+        map.on('click', function(event) {
+            if (!start) {
+                start = [event.latlng.lat, event.latlng.lng];  // Set start point with lat and lng
+                alert("Start point set. Now click to set the goal.");
+            } else if (!goal) {
+                goal = [event.latlng.lat, event.latlng.lng];  // Set goal point with lat and lng
+                alert("Goal point set. Path will be calculated.");
+            }
+            updateMarkers();  // Update markers on the map
+        });
+
+        // Fetch path from the backend API
+        function fetchPath() {
+            console.log('Fetching path for:', start, goal);  // Log the coordinates
+            fetch('http://127.0.0.1:5000/find_path', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    start: start,
+                    goal: goal
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Path data received:', data);  // Log the path data
+                if (data.path) {
+                    plotPath(data.path);  // Call the function to plot the path
+                } else {
+                    console.error("No path found");
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching the path:', error);
+            });
+        }
+
+        // Function to plot the path received from the backend
+        function plotPath(path) {
+            if (!Array.isArray(path) || path.length === 0) {
+                console.error("Invalid path data");
+                return;
+            }
+            
+            // Convert the path into a LatLngArray for Leaflet
+            const latlngs = path.map(coord => [coord[0], coord[1]]);
+            
+            // Log the coordinates being plotted
+            console.log('Plotting path:', latlngs);
+            
+            // Draw the path as a polyline on the map
+            L.polyline(latlngs, { color: 'blue', weight: 4 }).addTo(map);
+        }
+    </script>
+</body>
+</html>
