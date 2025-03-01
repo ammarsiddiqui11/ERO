@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { ChevronRight, Mail, Lock, User, UserPlus, Car } from "lucide-react"
+import axios from "axios"
 
 export default function Register() {
   const [step, setStep] = useState(1)
@@ -16,6 +17,7 @@ export default function Register() {
     vehicleModel: "",
   })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -30,18 +32,31 @@ export default function Register() {
     e.preventDefault()
     if (step === 1) {
       if (formData.password !== formData.confirmPassword) {
-        alert("Passwords don't match")
+        setError("Passwords don't match")
         return
       }
       setStep(2)
     } else {
       setLoading(true)
-      // Simulate API call
-      setTimeout(() => {
-        setLoading(false)
-        // Handle registration logic here (removed for this example)
+      setError("")
+      try {
+        const response = await axios.post("http://localhost:5000/api/register", {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          vehicle: {
+            name: formData.vehicleName,
+            company: formData.vehicleCompany,
+            model: formData.vehicleModel,
+          },
+        })
+        localStorage.setItem("token", response.data.token)
         navigate("/") // Navigate to home page after successful registration
-      }, 1500)
+      } catch (error) {
+        setError(error.response?.data?.message || "An error occurred during registration")
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -98,6 +113,12 @@ export default function Register() {
             <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
             <p className="text-gray-600 mt-2">Join us and optimize your electric vehicle journeys</p>
           </div>
+
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {step === 1 ? (

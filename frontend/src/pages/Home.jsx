@@ -6,6 +6,8 @@ import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import { Search, MapPin, Navigation, LogOut, Menu, X, Battery, Zap, Clock, Car } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import axios from "axios"
+
 
 // Fix for default marker icon in Leaflet with React
 delete L.Icon.Default.prototype._getIconUrl
@@ -40,7 +42,29 @@ export default function Home() {
   const [totalDistance, setTotalDistance] = useState(0)
   const [userVehicle, setUserVehicle] = useState({ name: "My Car", company: "Tesla", model: "Model 3" })
   const [showVehicleForm, setShowVehicleForm] = useState(false)
+  const [user, setUser] = useState("")
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      const token = localStorage.getItem("token")
+      if (token) {
+        try {
+          const response = await axios.get("http://localhost:5000/api/user", {
+            headers: {
+              "x-auth-token": token,
+            },
+          })
+          setUser(response.data.name)
+          // console.log(response.data.name)
+        } catch (error) {
+          console.error("Error fetching user details:", error)
+        }
+      }
+    }
+
+    fetchUserDetails()
+  }, [])
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -167,8 +191,8 @@ export default function Home() {
               <div className="hidden md:ml-4 md:flex-shrink-0 md:flex md:items-center">
                 <div className="ml-3 relative">
                   <div className="flex items-center">
-                    <img className="h-8 w-8 rounded-full" src="https://via.placeholder.com/32" alt="User profile" />
-                    <span className="ml-2 text-sm font-medium text-gray-700">John Doe</span>
+                    {/* <img className="h-8 w-8 rounded-full" src="https://via.placeholder.com/32" alt="User profile" /> */}
+                    <span className="ml-2 text-sm font-medium text-gray-700">{user}</span>
                     <button
                       onClick={() => setShowVehicleForm(true)}
                       className="ml-4 p-1 rounded-full text-gray-400 hover:text-gray-500"

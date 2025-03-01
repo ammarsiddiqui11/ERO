@@ -1,22 +1,31 @@
 "use client"
 
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { ChevronRight, Mail, Lock, LogIn } from "lucide-react"
+import axios from "axios"
 
 export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    // Simulate API call
-    setTimeout(() => {
+    setError("")
+    try {
+      const response = await axios.post("http://localhost:5000/api/login", { email, password })
+      console.log(response.data)
+      localStorage.setItem("token", response.data.token)
+      navigate("/") // Navigate to home page after successful login
+    } catch (error) {
+      setError(error.response?.data?.message || "An error occurred during login")
+    } finally {
       setLoading(false)
-      // Handle login logic here (removed for this example)
-    }, 1500)
+    }
   }
 
   return (
@@ -72,6 +81,12 @@ export default function Login() {
             <h2 className="text-3xl font-bold text-gray-800">Welcome Back</h2>
             <p className="text-gray-600 mt-2">Sign in to continue to your account</p>
           </div>
+
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
